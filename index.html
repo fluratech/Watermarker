@@ -3,76 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Watermark Tool - MACE NOTES</title>
+    <title>PDF Watermark Generator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
             padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
         }
+
         input[type="file"] {
             margin: 20px 0;
         }
+
         #output-link {
             display: none;
             margin-top: 20px;
         }
+
         #output-link a {
-            font-size: 18px;
-            color: #007bff;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
             text-decoration: none;
+            border-radius: 5px;
+        }
+
+        #output-link a:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
 <body>
-    <h1>Add Watermark to PDF</h1>
-    <input type="file" id="file-input" accept="application/pdf" />
+
+    <h1>PDF Watermark Generator</h1>
+    <input type="file" id="file-input" accept="application/pdf">
     <div id="output-link"></div>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script>
         document.getElementById('file-input').addEventListener('change', async function(event) {
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file) {
+                alert('Please select a PDF file.');
+                return;
+            }
 
             const fileReader = new FileReader();
             fileReader.onload = async function() {
                 const arrayBuffer = fileReader.result;
-                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-                const pages = pdfDoc.getPages();
-                
-                // Set watermark properties
-                const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Georgia);
-                const opacity = 0.1; // 10% opacity for watermark
-                const watermarkText = 'MACE NOTES';
-                const fontSize = 64;
-                
-                // Add watermark to all pages
-                pages.forEach(page => {
-                    const { width, height } = page.getSize();
-                    page.drawText(watermarkText, {
-                        x: width / 2 - (font.widthOfTextAtSize(watermarkText, fontSize) / 2),
-                        y: height / 2,
-                        size: fontSize,
-                        font: font,
-                        color: PDFLib.rgb(0, 0, 0),
-                        opacity: opacity,
-                        rotate: PDFLib.degrees(45) // Rotate watermark along the diagonal
+                try {
+                    const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const pages = pdfDoc.getPages();
+                    const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Georgia);
+                    const opacity = 0.1;
+                    const watermarkText = 'MACE NOTES';
+                    const fontSize = 64;
+
+                    pages.forEach(page => {
+                        const { width, height } = page.getSize();
+                        page.drawText(watermarkText, {
+                            x: width / 2 - (font.widthOfTextAtSize(watermarkText, fontSize) / 2),
+                            y: height / 2,
+                            size: fontSize,
+                            font: font,
+                            color: PDFLib.rgb(0, 0, 0),
+                            opacity: opacity,
+                            rotate: PDFLib.degrees(45)
+                        });
                     });
-                });
 
-                // Save the modified PDF
-                const pdfBytes = await pdfDoc.save();
+                    const pdfBytes = await pdfDoc.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const link = URL.createObjectURL(blob);
+                    const outputLinkDiv = document.getElementById('output-link');
+                    outputLinkDiv.innerHTML = `<a href="${link}" download="watermarked_pdf.pdf">Download Watermarked PDF</a>`;
+                    outputLinkDiv.style.display = 'block';
 
-                // Create download link
-                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                const link = URL.createObjectURL(blob);
-                const outputLinkDiv = document.getElementById('output-link');
-                outputLinkDiv.innerHTML = `<a href="${link}" download="watermarked_pdf.pdf">Download Watermarked PDF</a>`;
-                outputLinkDiv.style.display = 'block';
+                } catch (error) {
+                    alert('Error processing PDF. Please try again.');
+                    console.error(error);
+                }
             };
             fileReader.readAsArrayBuffer(file);
         });
     </script>
+    
 </body>
 </html>
